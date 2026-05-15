@@ -1,65 +1,126 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useMessages, useRiskMetrics } from "@/hooks/useMessages";
+import MessageFeed from "@/components/MessageFeed";
+import RiskPanel from "@/components/RiskPanel";
+import ChainMap from "@/components/ChainMap";
+import AlertBanner from "@/components/AlertBanner";
+
+export default function Dashboard() {
+  const { messages, isLoading, isError } = useMessages(30);
+  const metrics = useRiskMetrics(messages);
+
+  const latencyColor =
+    metrics.avgLatencySeconds !== null && metrics.avgLatencySeconds > 30
+      ? "text-crimson"
+      : "text-green";
+
+  const failureColor = metrics.failureRate >= 2 ? "text-crimson" : "text-green";
+
+  const stats = [
+    {
+      label: "Total Messages",
+      value: String(metrics.totalMessages),
+      sub: "In current window",
+      color: "text-charcoal",
+    },
+    {
+      label: "Delivered",
+      value: String(metrics.deliveredCount),
+      sub: "Successfully relayed",
+      color: "text-green",
+    },
+    {
+      label: "Failure Rate",
+      value: `${metrics.failureRate}%`,
+      sub: "Last 30 messages",
+      color: failureColor,
+    },
+    {
+      label: "Avg Latency",
+      value: metrics.avgLatencySeconds !== null ? `${metrics.avgLatencySeconds}s` : "N/A",
+      sub: "Origin to destination",
+      color: latencyColor,
+    },
+  ];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-bg">
+      <div className="border-b border-border bg-card px-8 py-4 flex items-center justify-between sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <span className="font-condensed text-xl font-black uppercase tracking-wide text-charcoal">
+            Bridge<span className="text-navy">Monitor</span>
+          </span>
+          <span className="font-mono text-[9px] font-semibold uppercase tracking-widest bg-navy text-white px-2 py-0.5">
+            Beta
+          </span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-green animate-pulse" />
+            <span className="font-mono text-[10px] text-muted uppercase tracking-wider">
+              Live
+            </span>
+          </div>
+          <span className="font-mono text-[10px] text-muted">
+            {messages.length} messages loaded
+          </span>
         </div>
-      </main>
+      </div>
+
+      <div className="px-8 pt-5">
+        <AlertBanner metrics={metrics} />
+      </div>
+
+      <div className="px-8 pt-4">
+        <div className="grid grid-cols-4 border border-border">
+          {stats.map((stat, i) => (
+            <div key={i} className="px-6 py-4 border-r border-border last:border-r-0">
+              <div className="font-mono text-[9px] font-semibold uppercase tracking-widest text-muted mb-1">
+                {stat.label}
+              </div>
+              <div className={`font-mono text-2xl font-bold ${stat.color}`}>
+                {isLoading ? (
+                  <div className="h-7 w-16 bg-border rounded animate-pulse" />
+                ) : (
+                  stat.value
+                )}
+              </div>
+              <div className="font-mono text-[9px] text-muted mt-1">
+                {stat.sub}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="px-8 pt-4 pb-8 grid grid-cols-3 gap-4">
+        <div className="col-span-2">
+          {isError ? (
+            <div className="border border-crimson bg-crimson/5 px-5 py-8 text-center">
+              <span className="font-mono text-[11px] text-crimson">
+                Failed to load messages. Check your connection or the Hyperlane API.
+              </span>
+            </div>
+          ) : (
+            <MessageFeed messages={messages} isLoading={isLoading} />
+          )}
+        </div>
+        <div className="flex flex-col gap-4">
+          <RiskPanel metrics={metrics} />
+          <ChainMap messages={messages} />
+        </div>
+      </div>
+
+      <div className="border-t border-border px-8 py-4 flex items-center justify-between bg-card">
+        <span className="font-mono text-[10px] text-muted">
+          Built on dango.exchange · Powered by Hyperlane
+        </span>
+        <span className="font-mono text-[10px] text-muted">
+          {"Built by "}
+          <a href="https://x.com/olumi441" target="_blank" rel="noopener noreferrer" className="text-navy hover:text-charcoal transition-colors border-b border-navy/30">{"Abu Olumi"}</a>
+        </span>
+      </div>
     </div>
   );
 }
