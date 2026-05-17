@@ -1,103 +1,62 @@
 "use client";
 
-import { MessageWithMeta } from "@/hooks/useMessages";
-import { CONNECTED_CHAINS } from "@/lib/dango";
+import { DANGO_CHAINS } from "@/lib/dango";
+
+interface MessageWithMeta {
+  originChainId: number;
+  destinationChainId: number;
+}
 
 interface Props {
   messages: MessageWithMeta[];
 }
 
-interface RouteStats {
-  id: number;
-  name: string;
-  short: string;
-  color: string;
-  inbound: number;
-  outbound: number;
-  total: number;
-}
-
 export default function ChainMap({ messages }: Props) {
-  const stats: RouteStats[] = CONNECTED_CHAINS.map((chain) => {
-    const inbound = messages.filter(
-      (m) => m.destinationChainId === chain.id
-    ).length;
-    const outbound = messages.filter(
-      (m) => m.originChainId === chain.id
-    ).length;
-    return {
-      id: chain.id,
-      name: chain.name,
-      short: chain.short,
-      color: chain.color,
-      inbound,
-      outbound,
-      total: inbound + outbound,
-    };
+  const stats = DANGO_CHAINS.map((chain) => {
+    const inbound = messages.filter((m) => m.destinationChainId === chain.id).length;
+    const outbound = messages.filter((m) => m.originChainId === chain.id).length;
+    return { ...chain, inbound, outbound, total: inbound + outbound };
   }).sort((a, b) => b.total - a.total);
 
   const maxTotal = Math.max(...stats.map((s) => s.total), 1);
 
   return (
-    <div className="border border-border bg-card">
-      <div className="px-5 py-3 border-b border-border bg-bg">
-        <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-charcoal">
-          Chain Coverage
-        </span>
+    <div style={{ border: "1px solid #D4D0C8", background: "#F0EDE7" }}>
+      <div style={{ padding: "12px 20px", borderBottom: "1px solid #D4D0C8", background: "#E9E6DF" }}>
+        <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 10, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#161719" }}>Dango Route Activity</div>
+        <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 9, color: "#7A7670", marginTop: 2 }}>ETH → Dango · USDC deposits only</div>
       </div>
-
-      <div className="divide-y divide-border">
-        {stats.map((chain) => {
-          const barWidth = maxTotal > 0
-            ? Math.round((chain.total / maxTotal) * 100)
-            : 0;
-
+      <div>
+        {stats.map((chain, i) => {
+          const barWidth = Math.round((chain.total / maxTotal) * 100);
           return (
-            <div key={chain.id} className="px-5 py-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ background: chain.color }}
-                  />
-                  <span className="font-mono text-[11px] font-semibold text-charcoal">
-                    {chain.name}
-                  </span>
-                  <span className="font-mono text-[9px] text-muted uppercase tracking-wider">
-                    {chain.short}
-                  </span>
+            <div key={chain.id} style={{ padding: "12px 20px", borderBottom: i < stats.length - 1 ? "1px solid #D4D0C8" : "none" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: chain.color, flexShrink: 0 }} />
+                  <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 10, fontWeight: 600, color: "#161719" }}>{chain.name}</span>
+                  <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 9, color: "#7A7670" }}>{chain.short}</span>
                 </div>
-                <span className="font-mono text-[11px] font-bold text-navy">
-                  {chain.total} msgs
-                </span>
+                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 10, fontWeight: 700, color: "#1F3A8F" }}>{chain.total} msgs</span>
               </div>
-
-              <div className="h-1.5 bg-border rounded-full overflow-hidden mb-2">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${barWidth}%`, background: chain.color, opacity: 0.8 }}
-                />
+              <div style={{ height: 4, background: "#D4D0C8", overflow: "hidden", marginBottom: 6 }}>
+                <div style={{ height: "100%", width: `${barWidth}%`, background: chain.color, opacity: 0.85, transition: "width 0.5s ease" }} />
               </div>
-
-              <div className="flex items-center gap-4">
-                <span className="font-mono text-[9px] text-muted">
-                  {"↓ "}
-                  <span className="text-green font-semibold">{chain.inbound}</span>
-                  {" inbound"}
+              <div style={{ display: "flex", gap: 16 }}>
+                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 9, color: "#7A7670" }}>
+                  {"↓ "}<span style={{ color: "#1A6B3C", fontWeight: 600 }}>{chain.inbound}</span>{" inbound to Dango"}
                 </span>
-                <span className="font-mono text-[9px] text-muted">
-                  {"↑ "}
-                  <span className="text-navy font-semibold">{chain.outbound}</span>
-                  {" outbound"}
+                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 9, color: "#7A7670" }}>
+                  {"↑ "}<span style={{ color: "#1F3A8F", fontWeight: 600 }}>{chain.outbound}</span>{" outbound"}
                 </span>
               </div>
             </div>
           );
         })}
-
         {stats.every((s) => s.total === 0) && (
-          <div className="px-5 py-8 text-center font-mono text-[11px] text-muted">
-            No chain activity in this window
+          <div style={{ padding: "24px 20px" }}>
+            <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 10, color: "#7A7670", marginBottom: 6, textAlign: "center" }}>No Dango bridge activity in this window</div>
+            <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 9, color: "#D4D0C8", textAlign: "center" }}>Active route: ETH → Dango (USDC)</div>
           </div>
         )}
       </div>

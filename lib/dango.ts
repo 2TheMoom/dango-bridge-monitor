@@ -1,46 +1,45 @@
-// Dango chain configuration for Hyperlane PI chain queries
 export const DANGO_CHAIN_ID = 1399904803;
+export const DANGO_DOMAIN_ID = 1399904803;
 
-export const dangoChainConfig = {
-  chainId: DANGO_CHAIN_ID,
-  name: "dango",
-  protocol: "cosmos",
-  rpcUrls: [{ http: "https://rpc.dango.exchange" }],
-  blockExplorers: [],
-  contracts: {},
-};
+// Ethereum Hyperlane Mailbox (canonical, from hyperlane-registry)
+export const ETH_MAILBOX = "0xc005dc82818d67AF737725bD4bf75435d065D239";
 
-// All chains connected to Dango via Hyperlane
-export const CONNECTED_CHAINS = [
-  { id: 1,     name: "Ethereum",  short: "ETH",  color: "#627EEA" },
-  { id: 42161, name: "Arbitrum",  short: "ARB",  color: "#28A0F0" },
-  { id: 8453,  name: "Base",      short: "BASE", color: "#0052FF" },
-  { id: 10,    name: "Optimism",  short: "OP",   color: "#FF0420" },
-  { id: 137,   name: "Polygon",   short: "POLY", color: "#8247E5" },
+// USDC on Ethereum mainnet (Circle official)
+export const ETH_USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+
+// The only active route right now: ETH → Dango (USDC deposits)
+export const ACTIVE_ROUTES = [
+  {
+    from: { chainId: 1, name: "Ethereum", short: "ETH", color: "#627EEA" },
+    to:   { chainId: DANGO_CHAIN_ID, name: "Dango", short: "DNG", color: "#ff6b35" },
+    asset: "USDC",
+    direction: "deposit",
+    note: "USDC locked on Ethereum, synthetic minted on Dango",
+  },
 ];
 
-// Risk thresholds
-export const RISK_THRESHOLDS = {
-  // Messages pending longer than this are flagged (ms)
-  stuckMessageMs: 15 * 60 * 1000,
+// Chains relevant to Dango only
+export const DANGO_CHAINS = [
+  { id: 1, name: "Ethereum", short: "ETH", color: "#627EEA" },
+  { id: DANGO_CHAIN_ID, name: "Dango", short: "DNG", color: "#ff6b35" },
+];
 
-  // Failure rate above this triggers a warning (percentage)
+export const RISK_THRESHOLDS = {
+  stuckMessageMs: 15 * 60 * 1000,
   failureRateWarning: 2,
   failureRateCritical: 5,
-
-  // Latency above this triggers a warning (seconds)
   latencyWarning: 30,
   latencyCritical: 60,
-
-  // Minimum recommended ISM validators
   minValidators: 3,
 };
 
-// ISM validator mock config — replace with live contract reads once mainnet matures
 export const ISM_VALIDATORS: Record<number, { count: number; threshold: number }> = {
-  1:     { count: 5, threshold: 3 },
-  42161: { count: 5, threshold: 3 },
-  8453:  { count: 3, threshold: 2 },
-  10:    { count: 3, threshold: 2 },
-  137:   { count: 3, threshold: 2 },
+  1: { count: 5, threshold: 3 },
 };
+
+// Filter helper: is this message relevant to Dango?
+export function isDangoMessage(originChainId: number, destinationChainId: number): boolean {
+  return originChainId === DANGO_CHAIN_ID ||
+         destinationChainId === DANGO_CHAIN_ID ||
+         (originChainId === 1 && destinationChainId === DANGO_CHAIN_ID);
+}
